@@ -2,7 +2,10 @@ const amountOfCardsInDeck = 4
 const colorsOfCards = ['blue', 'red', 'green', 'yellow']
 const playersDecks = {}
 
-const createCardDeck = deckName => {
+let playerDOMcards = ''
+let trashDOMcards = document.querySelectorAll('[data-js="trash"]')
+
+const createCardDeck = playerName => {
   const newDeck = []
 
   for (let i = 0; i < amountOfCardsInDeck; i++) {
@@ -17,11 +20,14 @@ const createCardDeck = deckName => {
     newDeck.push(card)
   }
 
-  playersDecks[deckName] = newDeck
+  playersDecks[playerName] = newDeck
+
+  return playerName
 }
  
-const renderDeckIntoDOM = deck => {
-  const isPlayerDeck = deck == 'player'
+const addDeckIntoDOM = playerName => {
+  const isPlayerDeck = playerName == 'player'
+  const deck = playersDecks[playerName]
 
   const deckContainer = document.querySelector(`.${isPlayerDeck
     ? 'player-deck'
@@ -29,13 +35,42 @@ const renderDeckIntoDOM = deck => {
 
   const deckToHTML = deck.map(({ cardNumber, cardColor }) => {
     return `
-      <div class="card ${isPlayerDeck ? cardColor : 'hidden'}">
+      <div class="card ${isPlayerDeck ? cardColor : 'hidden'}"
+      ${isPlayerDeck  ?`data-js="${cardNumber}-${cardColor}"` : ''}>
         <span>${isPlayerDeck ? cardNumber : ''}</span>
       </div>
     `
   }).join('')
 
   deckContainer.innerHTML += deckToHTML
+
+  playerDOMcards = document.querySelectorAll('.player-deck .card')
+  playerDOMcards.forEach(card => card.addEventListener('mouseover', handleHoverCard(card)))
+  playerDOMcards.forEach(card => card.addEventListener('click', handleClickCard))
+}
+
+const updateDeckIntoDOM = playerName => {
+  const isPlayerDeck = playerName == 'player'
+  const deck = playersDecks[playerName]
+
+  const deckContainer = document.querySelector(`.${isPlayerDeck
+    ? 'player-deck'
+    : 'bot-deck'}`)
+
+  const deckToHTML = deck.map(({ cardNumber, cardColor }) => {
+    return `
+      <div class="card ${isPlayerDeck ? cardColor : 'hidden'}"
+      ${isPlayerDeck  ?`data-js="${cardNumber}-${cardColor}"` : ''}>
+        <span>${isPlayerDeck ? cardNumber : ''}</span>
+      </div>
+    `
+  }).join('')
+
+  deckContainer.innerHTML = deckToHTML
+
+  playerDOMcards = document.querySelectorAll('.player-deck .card')
+  playerDOMcards.forEach(card => card.addEventListener('mouseover', handleHoverCard(card)))
+  playerDOMcards.forEach(card => card.addEventListener('click', handleClickCard))
 }
 
 const equalCardsInDeck = (deck, number, color) => {
@@ -46,27 +81,52 @@ const equalCardsInDeck = (deck, number, color) => {
   return equalsCards
 }
 
-const throwCard = (deck, number, color) => {
-  const equalsCards = equalCardsInDeck(deck, number, color)
+const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
+  const playerDeck = playersDecks[playerName]
+
+  const lastTrashCard = trashDOMcards[trashDOMcards.length - 1]
+  const classesOfLastTrashCard = lastTrashCard.getAttribute('data-trash').split('-')
+
+  const [ numberOfLastTrashCard, colorOfLastTrashCard ] = classesOfLastTrashCard
+
+  const equalsCards = equalCardsInDeck(playerDeck, numberOfLastTrashCard, colorOfLastTrashCard)
 
   const equalsCardsIncludesThrowingCard = equalsCards
   .some((({ cardNumber, cardColor }) =>
-      cardNumber == number && cardColor == color))
+      cardNumber == throwingCardNumber || cardColor == throwingCardColor))
 
-  const throwingCardIndex = deck.findIndex(({ cardNumber, cardColor }) =>
-    cardNumber == number && cardColor == color)
+  const throwingCardIndex = playerDeck.findIndex(({ cardNumber, cardColor }) =>
+    cardNumber == throwingCardNumber && cardColor == throwingCardColor)
 
   if (equalsCardsIncludesThrowingCard) {
-    deck.splice(throwingCardIndex, 1)
+    playerDeck.splice(throwingCardIndex, 1)
 
-    renderDeckIntoDOM(deck)
+    return updateDeckIntoDOM(playerName)
   }
 
-  console.log('Oops, essa carta não combina')
+  return
+}
+
+const handleHoverCard = card => {
+  card.style.cursor = 'cursor'
+}
+
+const handleClickCard = event => {
+  const classesOfClickedCard = event.target.getAttribute('data-js').split('-')
+
+  const [ numberOfClickedCard, colorOfClickedCard ] = classesOfClickedCard
+
+  console.log(numberOfClickedCard, colorOfClickedCard)
+
+  throwCard('player', numberOfClickedCard, colorOfClickedCard)
 }
 
 const playerCardDeck = createCardDeck('player')
 const botCardDeck = createCardDeck('bot')
 
-// renderDeckIntoDOM(playerCardDeck)
-// renderDeckIntoDOM(botCardDeck)
+addDeckIntoDOM(playerCardDeck)
+addDeckIntoDOM(botCardDeck)
+
+playerDOMcards.forEach(card => card.addEventListener('mouseover', handleHoverCard(card)))
+playerDOMcards.forEach(card => card.addEventListener('click', handleClickCard))
+
