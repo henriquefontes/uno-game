@@ -23,23 +23,14 @@
   display: flex;
   width: 100%;
   height: 100%;
-}
-
-.middle.left, .middle.right {
-  width: 50%;
-  height: 100%;
-}
-
-.middle.left {
-  display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: flex-end;
 }
 
-.middle.right {
+.trash, .buy {
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  width: 120px;
+  height: 170px;
 }
 
 .card {
@@ -78,11 +69,26 @@
   background-color: gray;
 }
 
-.card.grab {
+.card.buy {
   background-color: rgb(211, 37, 72);
+  position: absolute;
+  transition: .5s all;
 }
 
 .card.trash {
   position: absolute;
   overflow: hidden;
+  cursor: auto;
+  animation-name: showTrashCard;
+  animation-duration: .7s;
+}
+
+@keyframes showTrashCard {
+  from {
+    transform: scale(0);
+  }
+
+  to {
+    transform: scale(1);
+  }
 }

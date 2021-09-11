@@ -1,10 +1,9 @@
-const amountOfCardsInDeck = 9
+const amountOfCardsInDeck = 4
 const colorsOfCards = ['blue', 'red', 'green', 'yellow']
 const playersDecks = {}
-const trashDeck = [
-  { cardNumber: 1, cardColor: 'blue' }
-]
+const trashDeck = []
 const trashContainer = document.querySelector('.trash')
+const $buyCard = document.querySelector('.card.buy')
 
 let playerDOMcards = ''
 
@@ -28,6 +27,10 @@ const createCardDeck = playerName => {
   return playerName
 }
 
+const translateBuyCard = () => {
+  $buyCard.style.transform = 'translateX(-50%)'
+}
+
 const renderDeckIntoDOM = playerName => {
   const isPlayerDeck = playerName == 'player'
   const deck = playersDecks[playerName]
@@ -48,8 +51,8 @@ const renderDeckIntoDOM = playerName => {
   deckContainer.innerHTML = deckToHTML
 
   playerDOMcards = document.querySelectorAll('.player-deck .card')
-  playerDOMcards.forEach(card => card.addEventListener('mouseover', handleHoverCard))
-  playerDOMcards.forEach(card => card.addEventListener('click', handleClickCard))
+  playerDOMcards.forEach(card => card.addEventListener('mouseover', handleCardHover))
+  playerDOMcards.forEach(card => card.addEventListener('click', handleCardClick))
 }
 
 const renderTrashIntoDOM = () => {
@@ -61,10 +64,10 @@ const renderTrashIntoDOM = () => {
     `
   }).join('')
 
-  trashContainer.innerHTML += trashCardsToHTML
+  trashContainer.innerHTML = trashCardsToHTML
 }
 
-const getCardInfo = card => {
+const getDOMCardInfo = card => {
   const classesOfCard = card.getAttribute('data-js').split('-')
   const [ numberOfCard, colorOfCard ] = classesOfCard
 
@@ -74,54 +77,91 @@ const getCardInfo = card => {
   ]
 }
 
-const cardsEqualsLastTrashCard = (deck, number, color) => {
-  const equalsCards = deck.filter(({ cardNumber, cardColor }) => {
-    return cardNumber == number || cardColor == color
-  })
-
-  return equalsCards
+const getLastTrashCard = () => {
+  return trashDeck[trashDeck.length - 1]
 }
 
-const buyCard = () => {
+const cardsEqualsLastTrashCard = (deck, number, color) => {
+  if (trashDeck.length) {
+    const equalsCards = deck.filter(({ cardNumber, cardColor }) => {
+      return cardNumber == number || cardColor == color
+    })
+  
+    return equalsCards
+  }
 
+  const equalsCards = deck
+}
+
+const createCard = () => {
+  const randomCardNumber = Math.floor(Math.random() * 9)
+  const randomCardColor = Math.floor(Math.random() * colorsOfCards.length)
+  const randomCard = {
+    cardNumber: randomCardNumber,
+    cardColor: colorsOfCards[randomCardColor]
+  }
+
+  return randomCard
+}
+
+const buyCard = playerName => {
+  const deck = playersDecks[playerName]
+  const newCard = createCard()
+
+  deck.push(newCard)
+  renderDeckIntoDOM(playerName)
 }
 
 const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   const playerDeck = playersDecks[playerName]
   
-  const lastTrashCard = trashDeck[trashDeck.length - 1]
-  const {
-    cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
-  } = lastTrashCard
+  const lastTrashCard = getLastTrashCard()
 
-  const equalsCards = cardsEqualsLastTrashCard(
-    playerDeck, numberOfLastTrashCard, colorOfLastTrashCard
-  )
-
-  const equalsCardsIncludesThrowingCard = equalsCards
-  .some((({ cardNumber, cardColor }) =>
-      cardNumber == throwingCardNumber && cardColor == throwingCardColor))
-
-  const throwingCardIndex = playerDeck.findIndex(({ cardNumber, cardColor }) =>
-    cardNumber == throwingCardNumber && cardColor == throwingCardColor)
-
-  if (equalsCardsIncludesThrowingCard) {
-    trashDeck.push(playerDeck[throwingCardIndex])
-    playerDeck.splice(throwingCardIndex, 1)
-
-    renderDeckIntoDOM(playerName)
-    renderTrashIntoDOM()
+  if (lastTrashCard) {
+    const {
+      cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
+    } = lastTrashCard
+  
+    const equalsCards = cardsEqualsLastTrashCard(
+      playerDeck, numberOfLastTrashCard, colorOfLastTrashCard
+    )
+  
+    const equalsCardsIncludesThrowingCard = equalsCards
+    .some((({ cardNumber, cardColor }) =>
+        cardNumber == throwingCardNumber && cardColor == throwingCardColor))
+  
+    const throwingCardIndex = playerDeck.findIndex(({ cardNumber, cardColor }) =>
+      cardNumber == throwingCardNumber && cardColor == throwingCardColor)
+  
+    if (equalsCardsIncludesThrowingCard) {
+      trashDeck.push(playerDeck[throwingCardIndex])
+      playerDeck.splice(throwingCardIndex, 1)
+  
+      renderDeckIntoDOM(playerName)
+      renderTrashIntoDOM()
+  
+      return
+    }
 
     return
   }
 
-  return
+  const throwingCardIndex = playerDeck.findIndex(({ cardNumber, cardColor }) =>
+  cardNumber == throwingCardNumber && cardColor == throwingCardColor)
+
+  trashDeck.push(playerDeck[throwingCardIndex])
+  playerDeck.splice(throwingCardIndex, 1)
+
+  translateBuyCard()
+  renderDeckIntoDOM(playerName)
+  renderTrashIntoDOM()
+  
 }
 
 const botSelectCardToThrow = () => {
   const botDeck = playersDecks[botCardDeck]
   
-  const lastTrashCard = trashDeck[trashDeck.length - 1]
+  const lastTrashCard = getLastTrashCard()
   const {
     cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
   } = lastTrashCard
@@ -146,30 +186,43 @@ const botSelectCardToThrow = () => {
   
 }
 
-const handleHoverCard = event => {
+const handleCardHover = event => {
   const cardContainer = event.target
-  const [ numberOfHoveredCard, colorOfHoveredCard ] = getCardInfo(cardContainer)
+  const [ numberOfHoveredCard, colorOfHoveredCard ] = getDOMCardInfo(cardContainer)
 
-  const lastTrashCard = trashDeck[trashDeck.length - 1]
-  const {
-    cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
-  } = lastTrashCard
+  const lastTrashCard = getLastTrashCard()
 
-  const hoveredCardEqualsLastTrashCard = cardsEqualsLastTrashCard(
-    playersDecks[playerCardDeck], numberOfLastTrashCard, colorOfLastTrashCard
-  ).some((({ cardNumber, cardColor }) =>
-  cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
+  console.log(lastTrashCard)
 
-  const styleCursor = hoveredCardEqualsLastTrashCard
-    ? cardContainer.style.cursor = "pointer"
-    : cardContainer.style.cursor = "not-allowed"
+  if (lastTrashCard) {
+    const {
+      cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
+    } = lastTrashCard
+
+    const hoveredCardEqualsLastTrashCard = cardsEqualsLastTrashCard(
+      playersDecks[playerCardDeck], numberOfLastTrashCard, colorOfLastTrashCard
+    ).some((({ cardNumber, cardColor }) =>
+    cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
+  
+    const styleCursor = hoveredCardEqualsLastTrashCard
+      ? cardContainer.style.cursor = "pointer"
+      : cardContainer.style.cursor = "not-allowed"
+    
+    return
+  }
+
+  cardContainer.style.cursor = "pointer"
 }
 
-const handleClickCard = event => {
+const handleCardClick = event => {
   const cardContainer = event.target
-  const [ numberOfClickedCard, colorOfClickedCard ] = getCardInfo(cardContainer)
+  const [ numberOfClickedCard, colorOfClickedCard ] = getDOMCardInfo(cardContainer)
 
-  throwCard('player', numberOfClickedCard, colorOfClickedCard)
+  throwCard(playerCardDeck, numberOfClickedCard, colorOfClickedCard)
+}
+
+const handleBuyCardClick = () => {
+  buyCard(playerCardDeck)
 }
 
 const playerCardDeck = createCardDeck('player')
@@ -178,5 +231,7 @@ const botCardDeck = createCardDeck('bot')
 renderDeckIntoDOM(playerCardDeck)
 renderDeckIntoDOM(botCardDeck)
 
-playerDOMcards.forEach(card => card.addEventListener('mouseover', handleHoverCard))
-playerDOMcards.forEach(card => card.addEventListener('click', handleClickCard))
+
+playerDOMcards.forEach(card => card.addEventListener('mouseover', handleCardHover))
+playerDOMcards.forEach(card => card.addEventListener('click', handleCardClick))
+$buyCard.addEventListener('click', handleBuyCardClick)
