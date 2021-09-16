@@ -5,7 +5,6 @@ const $drawCard = document.querySelector('.card.buy')
 const playersDecks = {}
 const players = []
 const trashDeck = []
-const observers = []
 const colorsOfCards = ['blue', 'red', 'green', 'yellow']
 const amountOfCardsInDeck = 4
 
@@ -82,14 +81,14 @@ const getDOMCardInfo = card => {
   ]
 }
 
-const getLastTrashCard = () => {
+const getLastCard = () => {
   return trashDeck[trashDeck.length - 1]
 }
 
 const cardsEqualsLastCard = deck => {
   if (trashDeck.length) {
-    const { cardNumber: number, cardColor: color } = getLastTrashCard()
-    
+    const { cardNumber: number, cardColor: color } = getLastCard()
+
     const equalsCards = deck.filter(({ cardNumber, cardColor }) => {
       return cardNumber == number || cardColor == color
     })
@@ -98,6 +97,8 @@ const cardsEqualsLastCard = deck => {
   }
 
   const equalsCards = deck
+
+  return equalsCards
 }
 
 const createCard = () => {
@@ -126,9 +127,9 @@ const drawCard = playerName => {
 const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   const playerDeck = playersDecks[playerName]
   
-  const lastTrashCard = getLastTrashCard()
+  const lastCard = getLastCard()
 
-  if (lastTrashCard) {
+  if (lastCard) {
     const equalsCards = cardsEqualsLastCard(playerDeck)
   
     const equalsCardsIncludesThrowingCard = equalsCards
@@ -165,20 +166,18 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   translateDrawCard()
   renderDeckIntoDOM(playerName)
   renderTrashIntoDOM()
-  
-
-  
+  changePlayerTurn()
 }
 
 const botSelectPlay = () => {
   const botDeck = playersDecks[botCardDeck]
   
-  const lastTrashCard = getLastTrashCard()
+  const lastCard = getLastCard()
   
-  if (lastTrashCard) {
+  if (lastCard) {
     const {
-      cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
-    } = lastTrashCard
+      cardNumber: numberOfLastCard, cardColor: colorOfLastCard
+    } = lastCard
   
     const equalsCards = cardsEqualsLastCard(botDeck)
   
@@ -219,14 +218,14 @@ const handleCardHover = event => {
   const cardContainer = event.target
   const [ numberOfHoveredCard, colorOfHoveredCard ] = getDOMCardInfo(cardContainer)
 
-  const lastTrashCard = getLastTrashCard()
+  const lastCard = getLastCard()
 
-  if (lastTrashCard) {
-    const hoveredCardEqualsLastTrashCard = cardsEqualsLastCard(playersDecks[playerCardDeck])
+  if (lastCard) {
+    const hoveredCardEqualsLastCard = cardsEqualsLastCard(playersDecks[playerCardDeck])
     .some((({ cardNumber, cardColor }) =>
     cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
   
-    const styleCursor = hoveredCardEqualsLastTrashCard
+    const styleCursor = hoveredCardEqualsLastCard
       ? cardContainer.style.cursor = "pointer"
       : cardContainer.style.cursor = "not-allowed"
     
@@ -289,30 +288,31 @@ let currentPlayer = players[currentPlayerIndex]
 const lastPlayerIndex = players.length - 1
 
 const changePlayerTurn = () => {
+  const $turnText = document.querySelector('.turn-text')
+
   turnTimer.stop()
   turnTimer.start(turnTimerStart)
 
   currentPlayerIndex++
   currentPlayer = players[currentPlayerIndex]
+  $turnText.textContent = `Vez de: ${currentPlayer}`
 
   if (currentPlayerIndex > lastPlayerIndex) {
     currentPlayerIndex = 0
     currentPlayer = players[currentPlayerIndex]
+    $turnText.textContent = `Vez de: ${currentPlayer}`
   }
 
   if (currentPlayer == 'bot') {
     setTimeout(botSelectPlay, 4000)
   }
   
-  console.log(`Vez de: ${currentPlayer}`)
 }
 
 const turnTimerStart = currentTimerValue => {
   $turnTimer.textContent = currentTimerValue
 
   if (currentTimerValue == 0) {
-    console.log(`${currentPlayer} perdeu a vez!`)
-
     changePlayerTurn()
   }
 }
