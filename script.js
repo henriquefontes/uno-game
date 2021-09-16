@@ -267,10 +267,6 @@ const timer = timerValue => {
     clearInterval(timerInterval)
   }
   
-  const reset = () => {
-    clearInterval(timerInterval)
-  }
-  
   return {
     start,
     stop,
