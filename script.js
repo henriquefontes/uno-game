@@ -11,16 +11,6 @@ const amountOfCardsInDeck = 4
 
 let playerDOMcards = ''
 
-const addObserver = observerFunc => {
-  observers.push(observerFunc)
-} 
-
-const notifyObservers = (command) => {
-  for (const observerFunc of observers) {
-    observerFunc(command)
-  }
-}
-
 const createCardDeck = playerName => {
   const newDeck = []
 
@@ -96,8 +86,10 @@ const getLastTrashCard = () => {
   return trashDeck[trashDeck.length - 1]
 }
 
-const cardsEqualsLastCard = (deck, number, color) => {
+const cardsEqualsLastCard = deck => {
   if (trashDeck.length) {
+    const { cardNumber: number, cardColor: color } = getLastTrashCard()
+    
     const equalsCards = deck.filter(({ cardNumber, cardColor }) => {
       return cardNumber == number || cardColor == color
     })
@@ -137,13 +129,7 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   const lastTrashCard = getLastTrashCard()
 
   if (lastTrashCard) {
-    const {
-      cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
-    } = lastTrashCard
-  
-    const equalsCards = cardsEqualsLastCard(
-      playerDeck, numberOfLastTrashCard, colorOfLastTrashCard
-    )
+    const equalsCards = cardsEqualsLastCard(playerDeck)
   
     const equalsCardsIncludesThrowingCard = equalsCards
     .some((({ cardNumber, cardColor }) =>
@@ -188,31 +174,45 @@ const botSelectPlay = () => {
   const botDeck = playersDecks[botCardDeck]
   
   const lastTrashCard = getLastTrashCard()
-  const {
-    cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
-  } = lastTrashCard
-
-  const equalsCards = cardsEqualsLastCard(
-    botDeck, numberOfLastTrashCard, colorOfLastTrashCard
-  )
-
-  const haveCardToThrow = equalsCards.length
-
-  if (haveCardToThrow) {
-    const randomCardIndex = Math.floor(Math.random() * equalsCards.length)
-    const randomCardToThrow = equalsCards[randomCardIndex]
-    const {
-      cardNumber: randomCardNumber, cardColor: randomCardColor
-    } = randomCardToThrow
   
-    throwCard(botCardDeck, randomCardNumber, randomCardColor)
+  if (lastTrashCard) {
+    const {
+      cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
+    } = lastTrashCard
+  
+    const equalsCards = cardsEqualsLastCard(botDeck)
+  
+    console.log(equalsCards)
+
+    const haveCardToThrow = equalsCards.length
+  
+    if (haveCardToThrow) {
+      const randomCardIndex = Math.floor(Math.random() * equalsCards.length)
+      const randomCardToThrow = equalsCards[randomCardIndex]
+      const {
+        cardNumber: randomCardNumber, cardColor: randomCardColor
+      } = randomCardToThrow
+    
+      throwCard(botCardDeck, randomCardNumber, randomCardColor)
+  
+      return
+    }
+
+    drawCard(botCardDeck)
 
     return
   }
 
-  
-  
-  drawCard(botCardDeck)
+  const equalsCards = cardsEqualsLastCard(botDeck)
+
+  const randomCardIndex = Math.floor(Math.random() * equalsCards.length)
+  const randomCardToThrow = equalsCards[randomCardIndex]
+  const {
+    cardNumber: randomCardNumber, cardColor: randomCardColor
+  } = randomCardToThrow
+    
+  throwCard(botCardDeck, randomCardNumber, randomCardColor)
+
 }
 
 const handleCardHover = event => {
@@ -222,13 +222,8 @@ const handleCardHover = event => {
   const lastTrashCard = getLastTrashCard()
 
   if (lastTrashCard) {
-    const {
-      cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
-    } = lastTrashCard
-
-    const hoveredCardEqualsLastTrashCard = cardsEqualsLastCard(
-      playersDecks[playerCardDeck], numberOfLastTrashCard, colorOfLastTrashCard
-    ).some((({ cardNumber, cardColor }) =>
+    const hoveredCardEqualsLastTrashCard = cardsEqualsLastCard(playersDecks[playerCardDeck])
+    .some((({ cardNumber, cardColor }) =>
     cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
   
     const styleCursor = hoveredCardEqualsLastTrashCard
