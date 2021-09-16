@@ -1,17 +1,25 @@
 "use strict";
 
-const amountOfCardsInDeck = 4
-const colorsOfCards = ['blue', 'red', 'green', 'yellow']
-const players = []
-const playersDecks = {}
-const trashDeck = []
 const trashContainer = document.querySelector('.trash')
 const $drawCard = document.querySelector('.card.buy')
+const playersDecks = {}
+const players = []
+const trashDeck = []
+const observers = []
+const colorsOfCards = ['blue', 'red', 'green', 'yellow']
+const amountOfCardsInDeck = 4
 
-let defaultTimerValue = 6
-let currentTimerValue = defaultTimerValue
-let currentPlayerIndexTurn = 0
 let playerDOMcards = ''
+
+const addObserver = observerFunc => {
+  observers.push(observerFunc)
+} 
+
+const notifyObservers = (command) => {
+  for (const observerFunc of observers) {
+    observerFunc(command)
+  }
+}
 
 const createCardDeck = playerName => {
   const newDeck = []
@@ -88,7 +96,7 @@ const getLastTrashCard = () => {
   return trashDeck[trashDeck.length - 1]
 }
 
-const cardsEqualsLastTrashCard = (deck, number, color) => {
+const cardsEqualsLastCard = (deck, number, color) => {
   if (trashDeck.length) {
     const equalsCards = deck.filter(({ cardNumber, cardColor }) => {
       return cardNumber == number || cardColor == color
@@ -118,8 +126,9 @@ const drawCard = playerName => {
   console.log(`Adicionando carta: ${newCard.cardNumber}-${newCard.cardColor}, ao deck de: ${playerName}`)
 
   deck.push(newCard)
+  changePlayerTurn()
   renderDeckIntoDOM(playerName)
-  resetTimer()
+  
 }
 
 const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
@@ -132,7 +141,7 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
       cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
     } = lastTrashCard
   
-    const equalsCards = cardsEqualsLastTrashCard(
+    const equalsCards = cardsEqualsLastCard(
       playerDeck, numberOfLastTrashCard, colorOfLastTrashCard
     )
   
@@ -151,7 +160,7 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
 
       renderDeckIntoDOM(playerName)
       renderTrashIntoDOM()
-      resetTimer()
+      changePlayerTurn()
 
       return
     }
@@ -170,7 +179,7 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   translateDrawCard()
   renderDeckIntoDOM(playerName)
   renderTrashIntoDOM()
-  resetTimer()
+  
 
   
 }
@@ -183,7 +192,7 @@ const botSelectPlay = () => {
     cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
   } = lastTrashCard
 
-  const equalsCards = cardsEqualsLastTrashCard(
+  const equalsCards = cardsEqualsLastCard(
     botDeck, numberOfLastTrashCard, colorOfLastTrashCard
   )
 
@@ -200,6 +209,8 @@ const botSelectPlay = () => {
 
     return
   }
+
+  
   
   drawCard(botCardDeck)
 }
@@ -215,7 +226,7 @@ const handleCardHover = event => {
       cardNumber: numberOfLastTrashCard, cardColor: colorOfLastTrashCard
     } = lastTrashCard
 
-    const hoveredCardEqualsLastTrashCard = cardsEqualsLastTrashCard(
+    const hoveredCardEqualsLastTrashCard = cardsEqualsLastCard(
       playersDecks[playerCardDeck], numberOfLastTrashCard, colorOfLastTrashCard
     ).some((({ cardNumber, cardColor }) =>
     cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
@@ -241,65 +252,81 @@ const handleDrawCardClick = () => {
   drawCard(playerCardDeck)
 }
 
-const resetTimer = () => {
-  currentTimerValue = defaultTimerValue
-
-  const lastPlayerIndex = players.length - 1
-  const value = currentPlayerIndexTurn == lastPlayerIndex ? 0 : currentPlayerIndexTurn + 1
-
-  currentPlayerIndexTurn = value
-
-  let currentPlayerTurn = players[currentPlayerIndexTurn]
-
-  console.log(`Vez de: ${currentPlayerTurn}`)
-
-  if (currentPlayerTurn == 'bot') {
-    setTimeout(botSelectPlay, 2000)
-  }
-}
-
-const timer = () => {
-  let currentPlayerTurn = players[currentPlayerIndexTurn]
+const timer = timerValue => {
+  const timerDefaultValue = timerValue
+  let timerInterval
   
-  const lastPlayerIndex = players.length - 1
+  const start = callback => {
+    let currentTimerValue = timerDefaultValue
 
-  const $timer = document.querySelector('.timer-text')
-  $timer.textContent = currentTimerValue
+    const decreaseTimerValue = () => {
+      currentTimerValue--
 
-  if (currentTimerValue == 0) {
-    if (currentPlayerIndexTurn == lastPlayerIndex) {
-      currentPlayerIndexTurn = 0
-      currentTimerValue = defaultTimerValue
-      $timer.textContent = currentTimerValue
-
-      console.log(`Vez de: ${currentPlayerTurn}`)
-
-      if (currentPlayerTurn == 'bot') {
-        setTimeout(botSelectPlay, 2000)
-      }
-
-      return
+      callback(currentTimerValue)
     }
+    
+    timerInterval = setInterval(decreaseTimerValue, 1000)
 
-    currentTimerValue = defaultTimerValue
-    currentPlayerIndexTurn++
-    $timer.textContent = currentTimerValue
-    return
   }
-
-  currentTimerValue--
-  $timer.textContent = currentTimerValue
+  
+  const stop = () => {
+    clearInterval(timerInterval)
+  }
+  
+  const reset = () => {
+    clearInterval(timerInterval)
+  }
+  
+  return {
+    start,
+    stop,
+  }
 }
-
-const startTimer = () => { setInterval(timer, 1000) }
 
 const playerCardDeck = createCardDeck('player')
 const botCardDeck = createCardDeck('bot')
 
+const turnTimer = timer(6)
+const $turnTimer = document.querySelector('.timer-text')
+
+let currentPlayerIndex = 0
+let currentPlayer = players[currentPlayerIndex]
+const lastPlayerIndex = players.length - 1
+
+const changePlayerTurn = () => {
+  turnTimer.stop()
+  turnTimer.start(turnTimerStart)
+
+  currentPlayerIndex++
+  currentPlayer = players[currentPlayerIndex]
+
+  if (currentPlayerIndex > lastPlayerIndex) {
+    currentPlayerIndex = 0
+    currentPlayer = players[currentPlayerIndex]
+  }
+
+  if (currentPlayer == 'bot') {
+    setTimeout(botSelectPlay, 4000)
+  }
+  
+  console.log(`Vez de: ${currentPlayer}`)
+}
+
+const turnTimerStart = currentTimerValue => {
+  $turnTimer.textContent = currentTimerValue
+
+  if (currentTimerValue == 0) {
+    console.log(`${currentPlayer} perdeu a vez!`)
+
+    changePlayerTurn()
+  }
+}
+
+
+turnTimer.start(turnTimerStart)
+
 renderDeckIntoDOM(playerCardDeck)
 renderDeckIntoDOM(botCardDeck)
-
-startTimer()
 
 playerDOMcards.forEach(card => card.addEventListener('mouseover', handleCardHover))
 playerDOMcards.forEach(card => card.addEventListener('click', handleCardClick))
