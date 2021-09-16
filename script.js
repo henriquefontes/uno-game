@@ -147,6 +147,12 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
 
       renderDeckIntoDOM(playerName)
       renderTrashIntoDOM()
+
+      if (!playerDeck.length) {
+        finishGame(playerName)
+        return
+      }
+
       changePlayerTurn()
 
       return
@@ -167,6 +173,11 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   renderDeckIntoDOM(playerName)
   renderTrashIntoDOM()
   changePlayerTurn()
+}
+
+const finishGame = playerName => {
+  turnTimer.stop()
+  alert(`${playerName} venceu o jogo`)
 }
 
 const botSelectPlay = () => {
