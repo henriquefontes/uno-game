@@ -36,7 +36,7 @@ const translateDrawCard = () => {
 }
 
 const renderDeckIntoDOM = playerName => {
-  const isPlayerDeck = playerName == 'player'
+  const isPlayerDeck = playerName == newPlayer
   const deck = playersDecks[playerName]
 
   const deckContainer = document.querySelector(`.${isPlayerDeck
@@ -89,16 +89,16 @@ const cardsEqualsLastCard = deck => {
   if (trashDeck.length) {
     const { cardNumber: number, cardColor: color } = getLastCard()
 
-    const equalsCards = deck.filter(({ cardNumber, cardColor }) => {
+    const cardsToThrow = deck.filter(({ cardNumber, cardColor }) => {
       return cardNumber == number || cardColor == color
     })
   
-    return equalsCards
+    return cardsToThrow
   }
 
-  const equalsCards = deck
+  const cardsToThrow = deck
 
-  return equalsCards
+  return cardsToThrow
 }
 
 const createCard = () => {
@@ -116,8 +116,6 @@ const drawCard = playerName => {
   const deck = playersDecks[playerName]
   const newCard = createCard()
 
-  console.log(`Adicionando carta: ${newCard.cardNumber}-${newCard.cardColor}, ao deck de: ${playerName}`)
-
   deck.push(newCard)
   changePlayerTurn()
   renderDeckIntoDOM(playerName)
@@ -130,20 +128,18 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   const lastCard = getLastCard()
 
   if (lastCard) {
-    const equalsCards = cardsEqualsLastCard(playerDeck)
+    const cardsToThrow = cardsEqualsLastCard(playerDeck)
   
-    const equalsCardsIncludesThrowingCard = equalsCards
+    const cardsToThrowIncludesThrowingCard = cardsToThrow
     .some((({ cardNumber, cardColor }) =>
         cardNumber == throwingCardNumber && cardColor == throwingCardColor))
   
     const throwingCardIndex = playerDeck.findIndex(({ cardNumber, cardColor }) =>
       cardNumber == throwingCardNumber && cardColor == throwingCardColor)
   
-    if (equalsCardsIncludesThrowingCard) {
+    if (cardsToThrowIncludesThrowingCard) {
       trashDeck.push(playerDeck[throwingCardIndex])
       playerDeck.splice(throwingCardIndex, 1)
-  
-      console.log(`Dropando carta: ${throwingCardNumber}-${throwingCardColor} de: ${playerName}`)
 
       renderDeckIntoDOM(playerName)
       renderTrashIntoDOM()
@@ -167,8 +163,6 @@ const throwCard = (playerName, throwingCardNumber, throwingCardColor) => {
   trashDeck.push(playerDeck[throwingCardIndex])
   playerDeck.splice(throwingCardIndex, 1)
 
-  console.log(`Dropando carta: ${throwingCardNumber}-${throwingCardColor} de: ${playerName}`)
-
   translateDrawCard()
   renderDeckIntoDOM(playerName)
   renderTrashIntoDOM()
@@ -181,7 +175,7 @@ const finishGame = playerName => {
 }
 
 const botSelectPlay = () => {
-  const botDeck = playersDecks[botCardDeck]
+  const botDeck = playersDecks[newBot]
   
   const lastCard = getLastCard()
   
@@ -189,72 +183,36 @@ const botSelectPlay = () => {
     const {
       cardNumber: numberOfLastCard, cardColor: colorOfLastCard
     } = lastCard
-  
-    const equalsCards = cardsEqualsLastCard(botDeck)
-  
-    console.log(equalsCards)
-
-    const haveCardToThrow = equalsCards.length
+    const cardsToThrow = cardsEqualsLastCard(botDeck)
+    const haveCardToThrow = cardsToThrow.length
   
     if (haveCardToThrow) {
-      const randomCardIndex = Math.floor(Math.random() * equalsCards.length)
-      const randomCardToThrow = equalsCards[randomCardIndex]
+      const randomCardIndex = Math.floor(Math.random() * cardsToThrow.length)
+      const randomCardToThrow = cardsToThrow[randomCardIndex]
       const {
         cardNumber: randomCardNumber, cardColor: randomCardColor
       } = randomCardToThrow
     
-      throwCard(botCardDeck, randomCardNumber, randomCardColor)
+      throwCard(newBot, randomCardNumber, randomCardColor)
   
       return
     }
 
-    drawCard(botCardDeck)
+    drawCard(newBot)
 
     return
   }
 
-  const equalsCards = cardsEqualsLastCard(botDeck)
+  const cardsToThrow = cardsEqualsLastCard(botDeck)
 
-  const randomCardIndex = Math.floor(Math.random() * equalsCards.length)
-  const randomCardToThrow = equalsCards[randomCardIndex]
+  const randomCardIndex = Math.floor(Math.random() * cardsToThrow.length)
+  const randomCardToThrow = cardsToThrow[randomCardIndex]
   const {
     cardNumber: randomCardNumber, cardColor: randomCardColor
   } = randomCardToThrow
     
-  throwCard(botCardDeck, randomCardNumber, randomCardColor)
+  throwCard(newBot, randomCardNumber, randomCardColor)
 
-}
-
-const handleCardHover = event => {
-  const cardContainer = event.target
-  const [ numberOfHoveredCard, colorOfHoveredCard ] = getDOMCardInfo(cardContainer)
-
-  const lastCard = getLastCard()
-
-  if (lastCard) {
-    const hoveredCardEqualsLastCard = cardsEqualsLastCard(playersDecks[playerCardDeck])
-    .some((({ cardNumber, cardColor }) =>
-    cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
-  
-    const styleCursor = hoveredCardEqualsLastCard
-      ? cardContainer.style.cursor = "pointer"
-      : cardContainer.style.cursor = "not-allowed"
-    
-    return
-  }
-
-  cardContainer.style.cursor = "pointer"
-}
-
-const handleCardClick = event => {
-  const cardContainer = event.target
-  const [ numberOfClickedCard, colorOfClickedCard ] = getDOMCardInfo(cardContainer)
-
-  throwCard(playerCardDeck, numberOfClickedCard, colorOfClickedCard)
-}
-
-const handleDrawCardClick = () => {
-  drawCard(playerCardDeck)
 }
 
 const timer = timerValue => {
@@ -284,8 +242,8 @@ const timer = timerValue => {
   }
 }
 
-const playerCardDeck = createCardDeck('player')
-const botCardDeck = createCardDeck('bot')
+const newPlayer = createCardDeck('careca')
+const newBot = createCardDeck('bot')
 
 const turnTimer = timer(6)
 const $turnTimer = document.querySelector('.timer-text')
@@ -310,7 +268,7 @@ const changePlayerTurn = () => {
     $turnText.textContent = `Vez de: ${currentPlayer}`
   }
 
-  if (currentPlayer == 'bot') {
+  if (currentPlayer == newBot) {
     setTimeout(botSelectPlay, 4000)
   }
   
@@ -324,11 +282,55 @@ const turnTimerStart = currentTimerValue => {
   }
 }
 
+const handleCardHover = event => {
+  const cardContainer = event.target
+  const [ numberOfHoveredCard, colorOfHoveredCard ] = getDOMCardInfo(cardContainer)
+
+  const lastCard = getLastCard()
+
+  if (lastCard) {
+    const hoveredCardEqualsLastCard = cardsEqualsLastCard(playersDecks[newPlayer])
+    .some((({ cardNumber, cardColor }) =>
+    cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
+  
+    const styleCursor = hoveredCardEqualsLastCard
+      ? cardContainer.style.cursor = "pointer"
+      : cardContainer.style.cursor = "not-allowed"
+    
+    return
+  }
+
+  cardContainer.style.cursor = "pointer"
+}
+
+const handleCardClick = event => {
+  const cardContainer = event.target
+  const [ numberOfClickedCard, colorOfClickedCard ] = getDOMCardInfo(cardContainer)
+
+  if (currentPlayer == newPlayer) {
+    throwCard(newPlayer, numberOfClickedCard, colorOfClickedCard)
+    return
+  }
+
+  cardContainer.style.animation = "cardShake 0.4s 1 linear"
+
+  setTimeout(() => cardContainer.style.animation = '', 400)
+}
+
+const handleDrawCardClick = event => {
+  const cardContainer = event.target
+
+  if (currentPlayer == newPlayer) {
+    drawCard(newPlayer)
+    return
+  }
+
+}
 
 turnTimer.start(turnTimerStart)
 
-renderDeckIntoDOM(playerCardDeck)
-renderDeckIntoDOM(botCardDeck)
+renderDeckIntoDOM(newPlayer)
+renderDeckIntoDOM(newBot)
 
 playerDOMcards.forEach(card => card.addEventListener('mouseover', handleCardHover))
 playerDOMcards.forEach(card => card.addEventListener('click', handleCardClick))
