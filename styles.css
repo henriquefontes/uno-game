@@ -56,6 +56,10 @@
   cursor: pointer;
 }
 
+.card span {
+  pointer-events: none;
+}
+
 .card.blue {
   background-color: rgb(43, 43, 255);
 }

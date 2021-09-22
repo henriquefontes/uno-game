@@ -86,7 +86,9 @@ const getLastCard = () => {
 }
 
 const cardsEqualsLastCard = deck => {
-  if (trashDeck.length) {
+  const haveDeckInTrash = trashDeck.length
+
+  if (haveDeckInTrash) {
     const { cardNumber: number, cardColor: color } = getLastCard()
 
     const cardsToThrow = deck.filter(({ cardNumber, cardColor }) => {
@@ -286,9 +288,9 @@ const handleCardHover = event => {
   const cardContainer = event.target
   const [ numberOfHoveredCard, colorOfHoveredCard ] = getDOMCardInfo(cardContainer)
 
-  const lastCard = getLastCard()
+  const haveCardInTrash = getLastCard()
 
-  if (lastCard) {
+  if (haveCardInTrash) {
     const hoveredCardEqualsLastCard = cardsEqualsLastCard(playersDecks[newPlayer])
     .some((({ cardNumber, cardColor }) =>
     cardNumber == numberOfHoveredCard && cardColor == colorOfHoveredCard))
